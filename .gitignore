@@ -1,0 +1,10 @@
+# raw and generated data
+data/
+results/
+logs/
+
+# system files
+.DS_Store
+*.log
+*.treefile
+*.ckp.gz
