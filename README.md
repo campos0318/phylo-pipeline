@@ -1,6 +1,6 @@
 # Phylogenetics Pipeline
 
-Simple pipeline for building phylogenetic trees using MAFFT and IQ-TREE.
+Simple reproducible pipeline for multiple sequence alignment and phylogenetic tree building using MAFFT and IQ-TREE.
 
 ---
 
@@ -9,7 +9,7 @@ Simple pipeline for building phylogenetic trees using MAFFT and IQ-TREE.
 * MAFFT
 * IQ-TREE
 
-Install on Ubuntu:
+Install:
 
 ```bash
 sudo apt update
@@ -18,18 +18,24 @@ sudo apt install mafft iqtree
 
 ---
 
-## Usage
+## Run
+
+Make scripts executable (first time only):
+
+```bash
+chmod +x scripts/run_pipeline.sh scripts/run_all.sh
+```
 
 Run on a single FASTA file:
 
 ```bash
-bash scripts/run_pipeline.sh data/raw/your_sequences.fasta
+./scripts/run_pipeline.sh data/raw/your_sequences.fasta
 ```
 
 Run on all FASTA files:
 
 ```bash
-bash scripts/run_all.sh
+./scripts/run_all.sh
 ```
 
 ---
