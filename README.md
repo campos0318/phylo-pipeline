@@ -1,3 +1,4 @@
+---
 # SARS-CoV-2 Genomic Surveillance Pipeline
 
 A reproducible bioinformatics pipeline for multiple sequence alignment and phylogenetic analysis of SARS-CoV-2 genomes using MAFFT and IQ-TREE.
@@ -22,18 +23,43 @@ Software versions used for development are documented in `software_versions.txt`
 
 ---
 
+## Sequence Quality Control
+
+Sequence quality control is performed using `scripts/qc_sequences.py`.
+
+The QC script evaluates:
+
+* Sequence length
+* Number of ambiguous `N` bases
+* Invalid nucleotide characters
+* Duplicate sequences
+
+Each sequence is assigned a `PASS` or `FAIL` status, with failure reasons recorded for sequences that do not meet the current QC criteria.
+
+QC results are written to:
+
+```text
+data/processed/<dataset>_qc.csv
+```
+
+Current QC thresholds are provisional and will be validated and refined as the pipeline is developed.
+
+---
+
 ## Project Structure
 
 ```text
 phylo_pipeline/
 ├── data/
-│   ├── raw/          # Input FASTA files
-│   └── aligned/      # MAFFT alignments
+│   ├── raw/              # Input FASTA files
+│   ├── processed/        # QC results
+│   └── aligned/          # MAFFT alignments
 ├── results/
-│   └── trees/        # IQ-TREE outputs
-├── scripts/          # Supporting scripts
-├── logs/             # Pipeline logs
-├── run_pipeline.sh   # Main pipeline
+│   └── trees/            # IQ-TREE outputs
+├── scripts/
+│   └── qc_sequences.py   # Sequence quality control
+├── logs/                 # Pipeline logs
+├── run_pipeline.sh       # Main pipeline
 └── software_versions.txt
 ```
 
@@ -121,8 +147,8 @@ See `software_versions.txt` for the recorded software environment.
 
 Planned extensions include:
 
-* Sequence and metadata quality control
-* Automated metadata extraction
+* Expansion of sequence quality control
+* Automated metadata extraction and integration with sequence QC
 * Geographic and temporal filtering
 * Integration of public SARS-CoV-2 genomic datasets
 * Phylogenetic visualization and interpretation
@@ -130,4 +156,3 @@ Planned extensions include:
 * Workflow automation with Nextflow
 
 ---
-
