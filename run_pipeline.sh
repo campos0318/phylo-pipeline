@@ -12,7 +12,7 @@ mkdir -p data/raw data/processed data/aligned results/trees scripts logs
 # loop through all FASTA files in the raw data folder
 for INPUT in data/raw/*.fasta; do
 	
-	# extract base filename (remove path and .fasta extension)
+	# extract base filename (remove path and .fasta suffix)
 	BASENAME=$(basename "$INPUT" .fasta)
 
 	# define log file for this dataset
@@ -25,6 +25,10 @@ for INPUT in data/raw/*.fasta; do
 		echo "Start: $(date)"
 		echo "========================================"
 
+		# run sequence quality control and filtering
+		echo "Running sequence QC..."
+		python3 scripts/qc_sequences.py "$INPUT"
+
 		# print software versions
 		echo "MAFFT Version:"
 		mafft --version
@@ -34,8 +38,15 @@ for INPUT in data/raw/*.fasta; do
 
 		# run MAFFT multiple sequence alignment
 		echo "Running MAFFT..."
+		FILTERED="data/processed/${BASENAME}_filtered.fasta"
 		ALIGNMENT="data/aligned/${BASENAME}_aligned.fasta"
-		mafft --auto "$INPUT" > "$ALIGNMENT"
+
+		if [[ ! -s "$FILTERED" ]]; then
+			echo "No sequences passed QC. Skipping $BASENAME."
+			exit 0
+		fi
+
+		mafft --auto "$FILTERED" > "$ALIGNMENT"
 
 		# run IQ-TREE with model selection and bootstrapping
 		echo "Running IQ-TREE..."

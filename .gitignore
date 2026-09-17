@@ -8,3 +8,7 @@ logs/
 *.log
 *.treefile
 *.ckp.gz
+
+# IDE files
+.idea/
+.Rhistory

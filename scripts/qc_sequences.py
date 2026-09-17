@@ -2,11 +2,16 @@
 # SARS-CoV-2 Genomic Surveillance Pipeline
 
 import csv
+import os
+import sys
 
 
 # Input and output files
-input_file = "data/raw/practice.fasta"
-output_file = "data/processed/practice_qc.csv"
+input_file = sys.argv[1]
+basename = os.path.splitext(os.path.basename(input_file))[0]
+
+output_file = f"data/processed/{basename}_qc.csv"
+filtered_file = f"data/processed/{basename}_filtered.fasta"
 
 
 # QC thresholds
@@ -19,8 +24,8 @@ MAX_AMBIGUOUS_BASES = 1000
 def read_fasta():
     """Read accession numbers and sequences from a FASTA file."""
 
-    accession_numbers = []
-    sequences = []
+    sequence_records = []
+    current_accession = ""
     current_sequence = ""
 
     with open(input_file, "r") as fasta_file:
@@ -31,123 +36,89 @@ def read_fasta():
 
                 # Save previous sequence before starting a new one
                 if current_sequence:
-                    sequences.append(current_sequence)
+                    sequence_records.append({
+                        "accession": current_accession,
+                        "sequence": current_sequence
+                    })
                     current_sequence = ""
 
                 # Extract accession number from header
-                header_parts = line.split(" ")
+                header_parts = line.strip().split(" ")
                 accession = header_parts[0]
-                accession_numbers.append(accession[1:])
+                current_accession = accession[1:]
 
             else:
                 current_sequence += line.strip()
 
         # Save final sequence
         if current_sequence:
-            sequences.append(current_sequence)
+            sequence_records.append({
+                "accession": current_accession,
+                "sequence": current_sequence
+            })
 
-    return accession_numbers, sequences
+    return sequence_records
 
 
 # Calculate sequence length
-def calculate_length(sequences):
+def calculate_length(sequence_records):
     """Calculate the length of each sequence."""
 
-    sequence_lengths = []
-
-    for sequence in sequences:
-        length = len(sequence)
-        sequence_lengths.append(length)
-
-    return sequence_lengths
+    for record in sequence_records:
+        record["length"] = len(record["sequence"])
 
 
 # Count ambiguous bases (N)
-def count_ambiguous(sequences):
+def count_ambiguous(sequence_records):
     """Count ambiguous N bases in each sequence."""
 
-    ambiguous_counts = []
-
-    for sequence in sequences:
-        ambiguous_counts.append(sequence.count("N"))
-
-    return ambiguous_counts
+    for record in sequence_records:
+        record["ambiguous_count"] = record["sequence"].count("N")
 
 
 # Identify invalid characters
-def find_invalid_chars(sequences):
+def find_invalid_chars(sequence_records):
     """Identify non-ACGTN characters in each sequence."""
 
-    invalid_counts = []
-    invalid_types = []
-
-    for sequence in sequences:
+    for record in sequence_records:
         current_sequence_invalid = []
 
-        for base in sequence:
+        for base in record["sequence"]:
             if base not in "ACGTN":
                 current_sequence_invalid.append(base)
 
-        invalid_counts.append(len(current_sequence_invalid))
-        invalid_types.append(
+        record["invalid_count"] = len(current_sequence_invalid)
+        record["invalid_types"] = (
             ", ".join(sorted(set(current_sequence_invalid))) or "None"
         )
 
-    return invalid_counts, invalid_types
-
 
 # Check for duplicate sequences
-def check_duplicates(sequences):
+def check_duplicates(sequence_records):
     """Determine whether each sequence is duplicated."""
 
-    duplicate_status = []
+    for record in sequence_records:
+        count = 0
 
-    for sequence in sequences:
-        count = sequences.count(sequence)
-        duplicate_status.append(count > 1)
+        for other_record in sequence_records:
+            if record["sequence"] == other_record["sequence"]:
+                count += 1
 
-    return duplicate_status
-
-
-# Store the QC results
-def store_qc_results(
-    accession_numbers,
-    sequence_lengths,
-    ambiguous_counts,
-    invalid_counts,
-    invalid_types,
-    duplicate_status
-):
-    """Combine QC metrics into a list of dictionaries."""
-
-    qc_results = []
-
-    for i in range(len(accession_numbers)):
-        result = {
-            "accession": accession_numbers[i],
-            "length": sequence_lengths[i],
-            "ambiguous_count": ambiguous_counts[i],
-            "invalid_count": invalid_counts[i],
-            "invalid_types": invalid_types[i],
-            "duplicate": duplicate_status[i],
-        }
-
-        qc_results.append(result)
-
-    return qc_results
+        record["duplicate"] = count > 1
 
 
 # Determine QC status
-def determine_qc_status(qc_results):
+def determine_qc_status(sequence_records):
     """Determine whether each sequence passes QC and identify failure reasons."""
-    for result in qc_results:
+
+    for record in sequence_records:
         qc_reasons = []
 
-        if result["length"] < MIN_SEQUENCE_LENGTH:
+        if record["length"] < MIN_SEQUENCE_LENGTH:
             qc_reasons.append("Sequence too short")
-        if result["ambiguous_count"] > MAX_AMBIGUOUS_BASES:
+        if record["ambiguous_count"] > MAX_AMBIGUOUS_BASES:
             qc_reasons.append("Sequence has too many ambiguous (N) bases")
-        if result["invalid_count"] > 0:
+        if record["invalid_count"] > 0:
             qc_reasons.append("Sequence has invalid characters")
 
         if qc_reasons:
@@ -155,12 +126,23 @@ def determine_qc_status(qc_results):
         else:
             qc_status = "PASS"
 
-        result["qc_status"] = qc_status
-        result["qc_reasons"] = qc_reasons
+        record["qc_status"] = qc_status
+        record["qc_reasons"] = qc_reasons
+
+
+# Write sequences that pass QC to a FASTA file
+def write_filtered_fasta(sequence_records):
+    """Write sequences that pass QC to a FASTA file."""
+
+    with open(filtered_file, "w") as fasta_file:
+        for record in sequence_records:
+            if record["qc_status"] == "PASS":
+                fasta_file.write(f">{record['accession']}\n")
+                fasta_file.write(f"{record['sequence']}\n")
 
 
 # Write results to a CSV file
-def write_qc_results(qc_results):
+def write_qc_results(sequence_records):
     """Write QC results to a CSV file."""
 
     with open(output_file, "w", newline="") as csv_file:
@@ -182,22 +164,28 @@ def write_qc_results(qc_results):
         writer.writeheader()
 
         # Convert QC reasons list to a string for CSV output
-        for result in qc_results:
-            result_copy = result.copy()
+        for record in sequence_records:
+            result_copy = record.copy()
+            del result_copy["sequence"]
             result_copy["qc_reasons"] = ", ".join(result_copy["qc_reasons"]) or "None"
             writer.writerow(result_copy)
 
 
 # Print QC summary
-def print_qc_summary(qc_results):
+def print_qc_summary(sequence_records):
     """Print a summary of sequence QC results."""
 
-    total_sequences = len(qc_results)
+    total_sequences = len(sequence_records)
+
+    if total_sequences == 0:
+        print("No sequences found.")
+        return
+
     passing_sequences = 0
     failing_sequences = 0
 
-    for result in qc_results:
-        if result["qc_status"] == "PASS":
+    for record in sequence_records:
+        if record["qc_status"] == "PASS":
             passing_sequences += 1
         else:
             failing_sequences += 1
@@ -213,26 +201,20 @@ def print_qc_summary(qc_results):
 
 
 # Run QC pipeline
-accession_numbers, sequences = read_fasta()
-sequence_lengths = calculate_length(sequences)
-ambiguous_counts = count_ambiguous(sequences)
-invalid_counts, invalid_types = find_invalid_chars(sequences)
-duplicate_status = check_duplicates(sequences)
-
-qc_results = store_qc_results(
-    accession_numbers,
-    sequence_lengths,
-    ambiguous_counts,
-    invalid_counts,
-    invalid_types,
-    duplicate_status
-)
+sequence_records = read_fasta()
+calculate_length(sequence_records)
+count_ambiguous(sequence_records)
+find_invalid_chars(sequence_records)
+check_duplicates(sequence_records)
 
 # Determine QC status
-determine_qc_status(qc_results)
+determine_qc_status(sequence_records)
+
+# Write filtered FASTA
+write_filtered_fasta(sequence_records)
 
 # Write QC results to CSV
-write_qc_results(qc_results)
+write_qc_results(sequence_records)
 
 # Print QC summary
-print_qc_summary(qc_results)
+print_qc_summary(sequence_records)
