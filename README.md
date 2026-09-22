@@ -1,204 +1,169 @@
-# SARS-CoV-2 Genomic Surveillance Pipeline
+# Genomic Surveillance Pipeline for SARS-CoV-2
 
-A reproducible bioinformatics pipeline for sequence quality control, multiple sequence alignment, and phylogenetic analysis of SARS-CoV-2 genomes.
+Genomic surveillance is a key public health tool for monitoring pathogen transmission, identifying low-quality sequence data, and inferring relationships among circulating variants. This project builds a simplified SARS-CoV-2 surveillance workflow that mirrors the early stages of outbreak genomics analysis.
 
-The pipeline accepts one or more FASTA datasets, performs sequence-level quality control and filtering, generates multiple sequence alignments with MAFFT, constructs maximum-likelihood phylogenetic trees with IQ-TREE, and records dataset-specific pipeline logs.
+The pipeline accepts FASTA sequence files, filters low-quality genomes, aligns sequences with MAFFT, and infers evolutionary relationships using IQ-TREE. It is designed as a beginner-friendly portfolio project to demonstrate practical skills in Python scripting, command-line automation, sequence quality control, and public health genomics.
 
-This project was developed as a portfolio project to demonstrate practical skills in bioinformatics scripting, reproducible analysis, sequence quality control, phylogenetics, and command-line workflow automation.
+---
+
+## Project goal
+
+This project demonstrates a streamlined genomic surveillance workflow used to support pathogen monitoring and outbreak investigation. In a public health context, sequence data are screened for quality before being used to assess diversity, detect problematic samples, and infer transmission relationships.
+
+The workflow emphasizes:
+
+- sequence quality control before downstream analysis
+- reproducible processing of multiple input datasets
+- alignment of high-quality genomes for phylogenetic inference
+- generation of interpretable outputs suitable for surveillance reporting
 
 ---
 
 ## Workflow
 
-The pipeline follows this workflow:
-
 ```text
 FASTA input
-    ↓
-Sequence quality control
-    ↓
-QC filtering
-    ↓
-MAFFT multiple sequence alignment
-    ↓
-IQ-TREE ModelFinder
-    ↓
-Maximum-likelihood phylogenetic analysis
-    ↓
-Ultrafast bootstrap support
+  ↓
+QC filtering and sequence validation
+  ↓
+Filtered sequences exported to FASTA
+  ↓
+Multiple sequence alignment with MAFFT
+  ↓
+Model selection with IQ-TREE
+  ↓
+Maximum-likelihood phylogeny and bootstrap support
+  ↓
+Results saved to processed and tree output folders
 ```
 
-Each FASTA file placed in `data/raw/` is processed independently.
+Each FASTA file in `data/raw/` is processed independently, with logs written for that dataset.
 
 ---
 
-## Requirements
+## Tools and methods
 
-* Python 3
-* Bash
-* MAFFT
-* IQ-TREE
+- Python 3 for sequence parsing and QC logic
+- Bash for pipeline orchestration
+- MAFFT for multiple sequence alignment
+- IQ-TREE for phylogenetic tree construction and model selection
+- CSV and FASTA outputs for reproducible results
 
-The pipeline was developed and tested in Ubuntu/WSL.
+### Versions used
 
-### Software Versions
+- MAFFT 7.505
+- IQ-TREE 2.0.7
 
-Versions used during development:
-
-* MAFFT 7.505
-* IQ-TREE 2.0.7
-
-The recorded software environment is documented in `software_versions.txt`.
+Software versions are recorded in `software_versions.txt`.
 
 ---
 
-## Sequence Quality Control
+## Sequence QC logic
 
-Sequence quality control is performed by `scripts/qc_sequences.py` before sequences are aligned.
+The QC script evaluates sequence quality before alignment.
 
-The QC process evaluates:
+Current checks include:
 
-* Sequence length
-* Ambiguous `N` bases
-* Invalid nucleotide characters
-* Duplicate sequences
+- minimum sequence length threshold
+- maximum allowed ambiguous bases (`N`)
+- invalid nucleotide characters
+- duplicate sequence detection
 
-Each sequence receives a `PASS` or `FAIL` status. Failure reasons are recorded for sequences that do not meet the current QC criteria.
+Each sequence is assigned a `PASS` or `FAIL` status, and failing sequences are excluded from the alignment step.
 
-### Current QC Criteria
+### Example QC thresholds
 
-| Metric                  | Criterion                                                   |
-| ----------------------- | ----------------------------------------------------------- |
-| Minimum sequence length | 29,000 bp                                                   |
-| Maximum ambiguous bases | 1,000 `N` bases                                             |
-| Invalid characters      | Any non-`A`, `C`, `G`, `T`, or `N` character causes failure |
-| Duplicate sequences     | Flagged for review but do not currently cause failure       |
+| Metric | Threshold |
+| --- | --- |
+| Minimum sequence length | 29,000 bp |
+| Maximum ambiguous bases | 1,000 `N` bases |
+| Invalid characters | Any non-`A`, `C`, `G`, `T`, or `N` character fails |
+| Duplicate sequences | Flagged for review |
 
-The current thresholds are provisional and have not been validated for routine operational SARS-CoV-2 genomic surveillance.
-
-### QC Output
-
-QC results are written to:
-
-```text
-data/processed/<dataset>_qc.csv
-```
-
-Sequences that pass QC are written to:
-
-```text
-data/processed/<dataset>_filtered.fasta
-```
-
-Only sequences passing QC are subsequently aligned with MAFFT.
+These thresholds are simple and reproducible, but should be validated against a real-world surveillance dataset before operational use.
 
 ---
 
-## Project Structure
+## Repository structure
 
 ```text
 phylo_pipeline/
 ├── data/
-│   ├── raw/                    # Input FASTA files
-│   ├── processed/              # QC results and filtered sequences
-│   └── aligned/                # MAFFT alignments
+│   ├── raw/                    # Input FASTA sequence files
+│   ├── processed/             # QC CSVs and filtered FASTA outputs
+│   ├── aligned/               # MAFFT alignment files
+│   └── metadata/              # Sample metadata templates
+├── logs/                      # Dataset-specific execution logs
 ├── results/
-│   └── trees/                  # IQ-TREE phylogenetic results
+│   └── trees/                 # IQ-TREE output and phylogenetic files
 ├── scripts/
-│   └── qc_sequences.py         # Sequence quality control
-├── logs/                       # Dataset-specific pipeline logs
-├── run_pipeline.sh             # Main pipeline workflow
-├── software_versions.txt       # Software versions used
-├── .gitignore
-└── README.md
+│   └── qc_sequences.py        # Quality control script
+├── run_pipeline.sh            # Main pipeline workflow
+├── software_versions.txt      # Software environment record
+├── README.md
+└── .gitignore
 ```
-
-Generated data, alignments, phylogenetic results, and logs are excluded from version control.
 
 ---
 
-## Running the Pipeline
+## How to run the pipeline
 
-### 1. Place FASTA files in the input directory
+### Option 1: use local FASTA files
 
-```text
-data/raw/
-```
-
-The pipeline accepts multiple `.fasta` files and processes each dataset independently.
-
-### 2. Run the pipeline
+1. Add one or more FASTA files to `data/raw/`.
+2. Run the workflow from the project root:
 
 ```bash
 ./run_pipeline.sh
 ```
 
-If necessary, make the script executable:
+If needed, make the script executable:
 
 ```bash
 chmod +x run_pipeline.sh
 ```
 
-### 3. Pipeline steps
+The pipeline will automatically:
 
-For each FASTA dataset, the pipeline:
+- check each dataset for quality issues
+- export passing sequences to a filtered FASTA file
+- align sequences with MAFFT
+- run IQ-TREE model selection and tree inference
+- save results in `data/processed/`, `data/aligned/`, and `results/trees/`
 
-1. Performs sequence quality control.
-2. Writes QC results to a CSV file.
-3. Writes sequences passing QC to a filtered FASTA file.
-4. Aligns filtered sequences using MAFFT with `--auto`.
-5. Uses IQ-TREE ModelFinder to select a substitution model.
-6. Constructs a maximum-likelihood phylogenetic tree.
-7. Performs 1,000 ultrafast bootstrap replicates.
-8. Records pipeline output in a dataset-specific log file.
+### Option 2: download SARS-CoV-2 genomes from NCBI GenBank
 
-If no sequences pass QC, the dataset is skipped and the pipeline continues to the next input dataset.
+This project also includes a beginner-friendly script that fetches SARS-CoV-2 genome records directly from NCBI and saves them into `data/raw/`.
+
+First, set your email for the NCBI API:
+
+```bash
+export NCBI_EMAIL="your_email@example.com"
+```
+
+If you are using a Conda environment, activate it first:
+
+```bash
+conda activate phylo_pipeline
+```
+
+Then run:
+
+```bash
+python scripts/fetch_ncbi_sequences.py
+```
+
+The script searches NCBI for SARS-CoV-2 complete genomes, downloads up to 50 FASTA records, and saves them together in `data/raw/ncbi_sars_cov_2.fasta`. Keeping the genomes in one multi-sequence FASTA file allows the pipeline to align them and infer one phylogenetic tree. This matches the 50-genome practice dataset used in the example results. Once the file is present, you can run the same pipeline script as above.
+
+This option demonstrates a simple automated data acquisition step that is common in real-world genomic surveillance workflows.
 
 ---
 
-## Analysis Settings
+## Example dataset results
 
-### MAFFT
+The included practice dataset contains 50 SARS-CoV-2 genome sequences.
 
-Multiple sequence alignment is performed using:
-
-```bash
-mafft --auto
-```
-
-MAFFT automatically selects an appropriate alignment strategy based on the input dataset.
-
-### IQ-TREE
-
-Phylogenetic analysis uses:
-
-```bash
--m MFP
-```
-
-to allow IQ-TREE ModelFinder to evaluate nucleotide substitution models and select a best-fit model.
-
-The pipeline uses:
-
-```bash
--bb 1000
-```
-
-to generate 1,000 ultrafast bootstrap replicates.
-
-Threads are automatically determined using:
-
-```bash
--nt AUTO
-```
-
----
-
-## Example Run
-
-The pipeline was tested using a practice dataset containing 50 SARS-CoV-2 genome sequences.
-
-### Quality Control
+### QC summary
 
 ```text
 Sequences analyzed: 50
@@ -206,46 +171,68 @@ Sequences passing QC: 50 (100.0%)
 Sequences failing QC: 0 (0.0%)
 ```
 
-### Multiple Sequence Alignment
-
-MAFFT produced an alignment containing:
+### Alignment summary
 
 ```text
 50 sequences
 29,918 alignment columns
 ```
 
-### Phylogenetic Analysis
-
-IQ-TREE ModelFinder selected:
+### Phylogenetic summary
 
 ```text
-GTR+F+I
+Best-fit model selected by IQ-TREE: GTR+F+I
+Ultrafast bootstrap replicates: 1000
 ```
 
-as the best-fit model according to BIC for this practice dataset.
-
-The analysis generated 1,000 ultrafast bootstrap replicates and produced a maximum-likelihood phylogenetic tree along with associated IQ-TREE output files.
-
-These results demonstrate successful execution of the complete workflow from FASTA input through phylogenetic analysis.
+These outputs show a successful end-to-end workflow from raw FASTA sequence input to phylogenetic inference.
 
 ---
 
-## Reproducibility
+## Why this is relevant to public health genomics
 
-The pipeline is designed to make analyses repeatable across datasets.
+This project mirrors key steps used in pathogen surveillance:
 
-Reproducibility features include:
+- screening raw sequence data for low-quality genomes
+- reducing noisy data before comparative analysis
+- aligning genomes to compare relationships among isolates
+- generating phylogenetic trees as a visual summary of sample relatedness
 
-* Automated processing of multiple FASTA datasets
-* Explicit QC criteria
-* Consistent alignment and phylogenetic analysis settings
-* Recorded software versions
-* Dataset-specific log files
-* Automated creation of required output directories
-* Separation of raw input, processed data, alignments, results, and logs
+This is a useful foundation for understanding how genomic tools can support outbreak response, sequence surveillance, and pathogen monitoring.
 
-The pipeline can be rerun on additional FASTA datasets using the same documented workflow and analysis settings.
+---
+
+## Skills demonstrated
+
+This project highlights practical experience in:
+
+- bioinformatics workflow development
+- FASTA parsing and quality control
+- command-line data analysis
+- reproducible research practices
+- phylogenetic analysis and tree inference
+- data organization and reporting for public health applications
+
+---
+
+## Future improvements
+
+This project is intentionally beginner-friendly, but it can be expanded into a more operational genomic surveillance workflow. Potential next steps include:
+
+- adding metadata such as collection date, location, and patient ID
+- validating QC thresholds against a real surveillance dataset
+- integrating lineage assignment tools or public genomic reference data
+- summarizing QC results in a human-readable report
+- generating tree visualizations for presentations and outbreak summaries
+- adding geographic and temporal filtering for surveillance-style analyses
+- implementing additional automated testing and workflow robustness checks
+- exploring a workflow management system such as Nextflow for larger-scale deployment
+
+---
+
+## Resume-ready project summary
+
+Developed a reproducible SARS-CoV-2 genomic surveillance pipeline that applies sequence quality control, performs multiple sequence alignment, and infers phylogenetic relationships using MAFFT and IQ-TREE. The project automates processing from raw FASTA input through QC filtering, alignment, and tree generation to support outbreak-focused genomic analysis and public health surveillance workflows.
 
 ---
 
@@ -261,18 +248,3 @@ Current limitations include:
 * Geographic and temporal filtering have not yet been implemented.
 * Phylogenetic tree generation is implemented, but downstream phylogenetic interpretation is outside the current scope.
 * The current workflow is implemented primarily with Bash and Python and has not yet been converted to a workflow management system such as Nextflow.
-
----
-
-## Future Development
-
-Potential extensions include:
-
-* Additional sequence QC metrics and threshold validation
-* Integration of sample metadata
-* Geographic and temporal filtering
-* Integration of publicly available SARS-CoV-2 genomic datasets
-* Phylogenetic visualization and reporting
-* Additional automated testing
-* Workflow implementation using Nextflow
-* Expansion toward a more complete genomic surveillance workflow

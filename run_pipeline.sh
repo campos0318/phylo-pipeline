@@ -46,6 +46,12 @@ for INPUT in data/raw/*.fasta; do
 			exit 0
 		fi
 
+		PASSING_COUNT=$(grep -c '^>' "$FILTERED")
+		if (( PASSING_COUNT < 3 )); then
+			echo "Fewer than 3 sequences passed QC. Skipping $BASENAME."
+			exit 0
+		fi
+
 		mafft --auto "$FILTERED" > "$ALIGNMENT"
 
 		# run IQ-TREE with model selection and bootstrapping
