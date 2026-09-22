@@ -92,12 +92,13 @@ phylo_pipeline/
 │   ├── raw/                    # Input FASTA sequence files
 │   ├── processed/             # QC CSVs and filtered FASTA outputs
 │   ├── aligned/               # MAFFT alignment files
-│   └── metadata/              # Sample metadata templates
+│   └── metadata/              # Tracked templates and NCBI accession manifests
 ├── logs/                      # Dataset-specific execution logs
 ├── results/
 │   └── trees/                 # IQ-TREE output and phylogenetic files
 ├── scripts/
-│   └── qc_sequences.py        # Quality control script
+│   ├── fetch_ncbi_sequences.py # NCBI data acquisition script
+│   └── qc_sequences.py         # Quality control script
 ├── run_pipeline.sh            # Main pipeline workflow
 ├── software_versions.txt      # Software environment record
 ├── README.md
@@ -133,7 +134,7 @@ The pipeline will automatically:
 
 ### Option 2: download SARS-CoV-2 genomes from NCBI GenBank
 
-This project also includes a beginner-friendly script that fetches SARS-CoV-2 genome records directly from NCBI and saves them into `data/raw/`.
+This project also includes a beginner-friendly script that fetches SARS-CoV-2 genome records directly from NCBI and saves them into `data/raw/`. FASTA files and generated analysis outputs are ignored by Git, while the metadata template and accession manifest provide a reproducible record of the inputs.
 
 First, set your email for the NCBI API:
 
@@ -153,7 +154,7 @@ Then run:
 python scripts/fetch_ncbi_sequences.py
 ```
 
-The script searches NCBI for SARS-CoV-2 complete genomes, downloads up to 50 FASTA records, and saves them together in `data/raw/ncbi_sars_cov_2.fasta`. Keeping the genomes in one multi-sequence FASTA file allows the pipeline to align them and infer one phylogenetic tree. This matches the 50-genome practice dataset used in the example results. Once the file is present, you can run the same pipeline script as above.
+The script searches NCBI for SARS-CoV-2 complete genomes, downloads up to 50 FASTA records, and saves them together in `data/raw/ncbi_sars_cov_2.fasta`. It also records the exact accession IDs and retrieval time in `data/metadata/ncbi_sars_cov_2_accessions.csv`. Keeping the genomes in one multi-sequence FASTA file allows the pipeline to align them and infer one phylogenetic tree. Once the file is present, you can run the same pipeline script as above.
 
 This option demonstrates a simple automated data acquisition step that is common in real-world genomic surveillance workflows.
 
@@ -161,7 +162,7 @@ This option demonstrates a simple automated data acquisition step that is common
 
 ## Example dataset results
 
-The included practice dataset contains 50 SARS-CoV-2 genome sequences.
+The local practice dataset contains 50 SARS-CoV-2 genome sequences. FASTA files and generated outputs are not committed to the repository; the summaries below document a representative local run.
 
 ### QC summary
 

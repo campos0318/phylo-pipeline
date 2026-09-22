@@ -1,10 +1,14 @@
 # raw and generated data
-data/
+data/*
+!data/
+!data/metadata/
+!data/metadata/sample_metadata.csv
 results/
 logs/
 
 # system files
 .DS_Store
+__pycache__/
 *.log
 *.treefile
 *.ckp.gz

@@ -1,4 +1,6 @@
+import csv
 import os
+from datetime import datetime, timezone
 from Bio import Entrez
 from pathlib import Path
 
@@ -47,7 +49,19 @@ def main():
     with open(file_path, "w") as file:
         file.write(fasta)
 
+    # Save the exact accessions and retrieval time for reproducibility.
+    metadata_dir = Path("data/metadata")
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = metadata_dir / "ncbi_sars_cov_2_accessions.csv"
+    with open(manifest_path, "w", newline="") as manifest_file:
+        writer = csv.writer(manifest_file)
+        writer.writerow(["accession", "retrieved_at_utc", "search_term"])
+        retrieved_at = datetime.now(timezone.utc).isoformat()
+        for accession_id in ids:
+            writer.writerow([accession_id, retrieved_at, search_term])
+
     print(f"Saved {file_path} with {len(ids)} genomes")
+    print(f"Saved accession manifest to {manifest_path}")
 
 
 if __name__ == "__main__":

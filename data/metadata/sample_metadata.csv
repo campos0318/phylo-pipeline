@@ -1,0 +1,7 @@
+sample_id,collection_date,location,host,collection_site,qc_status
+sample_01,2024-01-10,Region_A,Human,Clinic_A,PASS
+sample_02,2024-01-11,Region_A,Human,Clinic_B,PASS
+sample_03,2024-01-12,Region_B,Human,Clinic_C,PASS
+sample_04,2024-01-13,Region_B,Human,Clinic_D,PASS
+sample_05,2024-01-14,Region_C,Human,Clinic_E,PASS
+sample_06,2024-01-15,Region_C,Human,Clinic_F,FAIL
